@@ -46,7 +46,7 @@ body {
 
 .app-container {
     width: 100%;
-    max-width: 1500px;
+    max-width: 1540px;
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
@@ -166,14 +166,9 @@ header p {
     display: none !important;
 }
 
-/* Heatmap View Area */
+/* Heatmap View Area (no animation to prevent html2canvas opacity bug) */
 .heatmap-container {
-    animation: fadeIn 0.4s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    opacity: 1;
 }
 
 .controls-bar {
@@ -226,7 +221,7 @@ header p {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    gap: 2rem;
+    gap: 3.5rem; /* Sufficient gap so yard labels in the middle never collide */
     flex-wrap: nowrap;
     flex-direction: row-reverse; /* Heat Map left, Success Rate right */
     width: max-content;
@@ -248,12 +243,13 @@ header p {
 .panel-header h2 {
     font-size: 1.45rem;
     font-weight: 800;
-    color: var(--primary);
+    color: #9c1b1b;
 }
 
 .panel-total {
     font-size: 1.1rem;
     font-weight: 700;
+    color: #0f172a;
 }
 
 .legend {
@@ -270,8 +266,8 @@ header p {
     align-items: center;
     gap: 0.5rem;
     font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-main);
+    font-weight: 700;
+    color: #0f172a;
 }
 
 .color-box {
@@ -288,8 +284,8 @@ header p {
 
 .legend-note {
     font-size: 0.9rem;
-    color: #475569;
-    font-weight: 500;
+    color: #334155;
+    font-weight: 600;
 }
 
 /* Field Graphic */
@@ -306,7 +302,7 @@ header p {
     position: absolute;
     font-weight: 800;
     font-size: 1.4rem;
-    color: #000;
+    color: #000000;
     margin-top: -1.1rem;
     z-index: 10;
 }
@@ -414,8 +410,8 @@ header p {
     position: relative;
     z-index: 2;
     text-align: center;
-    color: #000;
-    text-shadow: 0 1px 2px rgba(255,255,255,0.6);
+    color: #000000;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.7);
 }
 
 .percentage {
@@ -427,7 +423,7 @@ header p {
 .fraction {
     display: block;
     font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 0.2rem;
 }
 
@@ -439,7 +435,7 @@ header p {
 .los {
     grid-column: 1 / -1;
     height: 154px;
-    background-color: #fff;
+    background-color: #ffffff;
     border-top: 4px solid #cc0000;
     position: relative;
     margin-top: -4px;
@@ -516,8 +512,8 @@ header p {
 
 .summary-table-header h3 {
     font-size: 1.15rem;
-    font-weight: 700;
-    color: #1e293b;
+    font-weight: 800;
+    color: #0f172a;
 }
 
 .summary-table {
@@ -529,16 +525,17 @@ header p {
 
 .summary-table th {
     background-color: #f1f5f9;
-    color: #334155;
-    font-weight: 700;
+    color: #0f172a;
+    font-weight: 800;
     padding: 0.75rem 1rem;
-    border-bottom: 2px solid var(--border);
+    border-bottom: 2px solid #cbd5e1;
 }
 
 .summary-table td {
     padding: 0.7rem 1rem;
     border-bottom: 1px solid #e2e8f0;
-    color: #1e293b;
+    color: #0f172a;
+    font-weight: 600;
 }
 
 .summary-table tbody tr:hover {
@@ -550,6 +547,11 @@ header p {
     background-color: #fef2f2;
     color: var(--primary);
     border-top: 2px solid #cbd5e1;
+}
+
+.summary-table tr.total-row td {
+    color: var(--primary);
+    font-weight: 800;
 }
 
 .zone-badge {
@@ -922,7 +924,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 4. Render Summary Table (ゾーン1〜9 & 合計)
         let tableHtml = '';
-        // Order from deep to short (7,8,9, 4,5,6, 1,2,3)
         const displayOrder = [7, 8, 9, 4, 5, 6, 1, 2, 3];
         displayOrder.forEach(z => {
             const att = attempts[z];
@@ -934,12 +935,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tableHtml += `
                 <tr>
                     <td><span class="zone-badge">${z}</span></td>
-                    <td style="color:#64748b; font-size:0.9rem;">${zoneDescriptions[z]}</td>
+                    <td style="color:#475569; font-size:0.9rem;">${zoneDescriptions[z]}</td>
                     <td style="font-weight:700;">${att}</td>
                     <td>${fmtPct(throwPct)}</td>
                     <td style="color:#15803d; font-weight:700;">${cmp}</td>
                     <td style="color:#dc2626;">${inc}</td>
-                    <td style="font-weight:800; color:${succPct !== null && succPct >= 50 ? '#15803d' : '#334155'};">
+                    <td style="font-weight:800; color:${succPct !== null && succPct >= 50 ? '#15803d' : '#0f172a'};">
                         ${succPct !== null ? fmtPct(succPct) : '-'}
                     </td>
                 </tr>
@@ -987,34 +988,57 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveImageBtn = document.getElementById('save-image-btn');
     saveImageBtn.addEventListener('click', () => {
         const controls = document.querySelector('.controls-bar');
-        const outers = document.querySelectorAll('.football-field-outer');
-        const fields = document.querySelectorAll('.football-field');
-
         const savedControls = controls.style.display;
         controls.style.display = 'none';
 
         fieldsRow.style.zoom = 1;
         const savedWidth = heatmapContainer.style.width;
+        const savedPadding = heatmapContainer.style.padding;
+        const savedBg = heatmapContainer.style.backgroundColor;
+
         heatmapContainer.style.width = 'max-content';
+        heatmapContainer.style.padding = '25px 35px 35px 35px';
+        heatmapContainer.style.backgroundColor = '#ffffff';
 
-        html2canvas(heatmapContainer, { backgroundColor: '#ffffff', scale: 2 })
-            .then(canvas => {
-                controls.style.display = savedControls;
-                heatmapContainer.style.width = savedWidth;
-                fitFields();
+        html2canvas(heatmapContainer, {
+            backgroundColor: '#ffffff',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            onclone: (clonedDoc) => {
+                const clonedContainer = clonedDoc.getElementById('heatmap-container');
+                if (clonedContainer) {
+                    clonedContainer.style.animation = 'none';
+                    clonedContainer.style.opacity = '1';
+                    clonedContainer.style.transform = 'none';
+                    clonedContainer.style.filter = 'none';
+                    clonedContainer.style.backgroundColor = '#ffffff';
+                    clonedContainer.querySelectorAll('*').forEach(el => {
+                        el.style.animation = 'none';
+                        el.style.transition = 'none';
+                    });
+                }
+            }
+        }).then(canvas => {
+            controls.style.display = savedControls;
+            heatmapContainer.style.width = savedWidth;
+            heatmapContainer.style.padding = savedPadding;
+            heatmapContainer.style.backgroundColor = savedBg;
+            fitFields();
 
-                const link = document.createElement('a');
-                link.download = `PassZone_Analysis_${new Date().toISOString().slice(0, 10)}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            })
-            .catch(err => {
-                console.error(err);
-                controls.style.display = savedControls;
-                heatmapContainer.style.width = savedWidth;
-                fitFields();
-                alert('画像の保存に失敗しました。');
-            });
+            const link = document.createElement('a');
+            link.download = `PassZone_Analysis_${new Date().toISOString().slice(0, 10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            console.error(err);
+            controls.style.display = savedControls;
+            heatmapContainer.style.width = savedWidth;
+            heatmapContainer.style.padding = savedPadding;
+            heatmapContainer.style.backgroundColor = savedBg;
+            fitFields();
+            alert('画像の保存に失敗しました。');
+        });
     });
 });
     </script>
