@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pass Zone Heat Map & 成功率分析ツール</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --bg-color: #f1f5f9;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --primary: #9c1b1b;
+    --primary-hover: #7f1414;
+    --border: #cbd5e1;
+    
+    /* Heatmap colors */
+    --color-over20: #f45b5b; /* 20%以上: 赤 */
+    --color-over10: #ffadad; /* 10%以上: 薄いピンク/赤 */
+    --color-under10: #bdd7ee; /* 0%超〜10%未満: 薄い青 */
+    --color-zero: #5b9bd5;    /* 0%: 青 */
+    
+    --grid-line: #000000;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Outfit', 'Roboto', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem 1.5rem;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 1500px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+h1 {
+    font-size: 2.3rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+    letter-spacing: -0.5px;
+}
+
+header p {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+}
+
+/* Drop Zone */
+.drop-zone {
+    border: 2px dashed #94a3b8;
+    border-radius: 12px;
+    padding: 3.5rem 2rem;
+    text-align: center;
+    transition: all 0.25s ease;
+    background: #f8fafc;
+    cursor: pointer;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.drop-zone.dragover {
+    border-color: var(--primary);
+    background: #fef2f2;
+    transform: scale(1.01);
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.upload-icon {
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+}
+
+.drop-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.format-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    background: #e2e8f0;
+    color: #334155;
+    padding: 0.35rem 0.8rem;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+.or-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    padding: 0.75rem 1.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    border: none;
+    font-size: 1rem;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Heatmap View Area */
+.heatmap-container {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.file-name-tag {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.total-tag {
+    background: #e0f2fe;
+    color: #0369a1;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.success-tag {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* Fields Layout */
+.fields-scaler {
+    display: flex;
+    justify-content: center;
+}
+
+.fields-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: nowrap;
+    flex-direction: row-reverse; /* Heat Map left, Success Rate right */
+    width: max-content;
+}
+
+.field-panel {
+    flex: 0 0 680px;
+    width: 680px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 45px;
+    margin-bottom: 0.5rem;
+}
+
+.panel-header h2 {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.panel-total {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    min-height: 28px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.color-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.color-box.over-20 { background-color: var(--color-over20); }
+.color-box.over-10 { background-color: var(--color-over10); }
+.color-box.under-10 { background-color: var(--color-under10); }
+.color-box.zero { background-color: var(--color-zero); }
+
+.legend-note {
+    font-size: 0.9rem;
+    color: #475569;
+    font-weight: 500;
+}
+
+/* Field Graphic */
+.football-field-wrapper {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 10px;
+}
+
+.yard-label {
+    position: absolute;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #000;
+    margin-top: -1.1rem;
+    z-index: 10;
+}
+
+.yard-label.left {
+    right: 100%;
+    padding-right: 6px;
+    left: auto;
+}
+
+.yard-label.right {
+    left: 100%;
+    padding-left: 6px;
+    right: auto;
+}
+
+.y-10 { top: 156px; }
+.y-5 { top: 310px; }
+.y-0 { top: 466px; }
+
+.football-field-outer {
+    position: relative;
+    padding: 0 40px;
+    width: 100%;
+    max-width: 680px;
+}
+
+.football-field {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 150px);
+    gap: 4px;
+    background-color: var(--grid-line);
+    border: 4px solid var(--grid-line);
+    border-bottom-width: 1px;
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Yard Ticks */
+.zone[data-zone="1"]::before, .zone[data-zone="4"]::before, .zone[data-zone="7"]::before,
+.zone[data-zone="3"]::before, .zone[data-zone="6"]::before, .zone[data-zone="9"]::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 12px;
+    background-color: #ffffff !important;
+    box-sizing: border-box;
+    border-right: 6px solid #ffffff;
+    pointer-events: none;
+    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-size: 100% 150px;
+    background-repeat: no-repeat;
+    z-index: 5;
+}
+
+.zone[data-zone="1"]::after, .zone[data-zone="4"]::after, .zone[data-zone="7"]::after,
+.zone[data-zone="3"]::after, .zone[data-zone="6"]::after, .zone[data-zone="9"]::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 12px;
+    background-color: #ffffff !important;
+    box-sizing: border-box;
+    border-left: 6px solid #ffffff;
+    pointer-events: none;
+    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-size: 100% 150px;
+    background-repeat: no-repeat;
+    z-index: 5;
+}
+
+.zone[data-zone="2"]::before, .zone[data-zone="5"]::before, .zone[data-zone="8"]::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 12px; background-color: #ffffff; z-index: 5;
+}
+.zone[data-zone="2"]::after, .zone[data-zone="5"]::after, .zone[data-zone="8"]::after {
+    content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 12px; background-color: #ffffff; z-index: 5;
+}
+
+.zone {
+    background-color: var(--color-zero);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.bg-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 8rem;
+    font-weight: 800;
+    color: rgba(0, 0, 0, 0.08);
+    z-index: 1;
+    user-select: none;
+}
+
+.data-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: #000;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.6);
+}
+
+.percentage {
+    display: block;
+    font-size: 1.85rem;
+    font-weight: 800;
+}
+
+.fraction {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 0.2rem;
+}
+
+.zone.rate-zone {
+    background-color: #ffffff;
+}
+
+/* Line of Scrimmage and Backfield */
+.los {
+    grid-column: 1 / -1;
+    height: 154px;
+    background-color: #fff;
+    border-top: 4px solid #cc0000;
+    position: relative;
+    margin-top: -4px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+}
+
+.los-zone {
+    position: relative;
+}
+
+.los-zone.left::before, .los-zone.right::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 12px;
+    background-color: #ffffff !important;
+    box-sizing: border-box;
+    border-right: 6px solid #ffffff;
+    pointer-events: none;
+    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-size: 100% 150px;
+    background-repeat: no-repeat;
+    z-index: 5;
+}
+
+.los-zone.left::after, .los-zone.right::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    width: 12px;
+    background-color: #ffffff !important;
+    box-sizing: border-box;
+    border-left: 6px solid #ffffff;
+    pointer-events: none;
+    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-size: 100% 150px;
+    background-repeat: no-repeat;
+    z-index: 5;
+}
+
+.los-zone.center::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 12px; background-color: #ffffff; z-index: 5; }
+.los-zone.center::after { content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 12px; background-color: #ffffff; z-index: 5; }
+
+.football {
+    font-size: 2rem;
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(90deg);
+    z-index: 10;
+}
+
+/* Summary Table Section */
+.summary-table-section {
+    max-width: 1000px;
+    margin: 2.5rem auto 0;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.summary-table-header {
+    background: #f8fafc;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-table-header h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.summary-table th {
+    background-color: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--border);
+}
+
+.summary-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
+}
+
+.summary-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.summary-table tr.total-row {
+    font-weight: 800;
+    background-color: #fef2f2;
+    color: var(--primary);
+    border-top: 2px solid #cbd5e1;
+}
+
+.zone-badge {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    font-weight: 800;
+    color: #0f172a;
+}
+    </style>
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- html2canvas for image export -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Pass Zone Heat Map & 成功率分析</h1>
+            <p>Excelファイルをドロップすると、Pass Zoneの絵（投球割合 & 成功率）と集計表を自動出力します</p>
+        </header>
+
+        <main>
+            <!-- Drop Area -->
+            <div id="upload-area">
+                <div id="drop-zone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <p class="drop-title">ここにExcelファイルをドラッグ＆ドロップ</p>
+                        <div class="format-badge">
+                            <span>対応形式: PASS ZONE / OPP PASSER / PASS RESULT / PLAY TYPE / GN/LS</span>
+                        </div>
+                        <span class="or-text">または</span>
+                        <label for="file-input" class="btn-primary">ファイルを選択</label>
+                        <input type="file" id="file-input" accept=".xlsx, .xls, .csv" hidden>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization & Table Container -->
+            <div id="heatmap-container" class="heatmap-container hidden">
+                <div class="controls-bar">
+                    <div class="file-info">
+                        <span class="file-name-tag" id="file-name-tag">📄 ファイル名</span>
+                        <span class="total-tag" id="total-badge">総パス: 0 本</span>
+                        <span class="success-tag" id="comp-badge">成功: 0 本 (0%)</span>
+                    </div>
+                    <div>
+                        <button id="reset-btn" class="btn-secondary">別のファイルを読み込む</button>
+                        <button id="save-image-btn" class="btn-primary" style="margin-left: 0.5rem; padding: 0.5rem 1.25rem;">画像として保存</button>
+                    </div>
+                </div>
+
+                <!-- Fields Graphic (Side by Side) -->
+                <div class="fields-scaler" id="fields-scaler">
+                    <div class="fields-row" id="fields-row">
+                        <!-- Left: Pass Success Rate -->
+                        <div class="field-panel">
+                            <div class="panel-header">
+                                <h2>Pass Success Rate (成功率)</h2>
+                                <div class="panel-total">Complete: <span id="rate-total">-</span></div>
+                            </div>
+                            <div class="legend">
+                                <div class="legend-note">※ G = 成功 ／ それ以外（NG、投げ捨て、QSC等） = 不成功</div>
+                            </div>
+                            <div class="football-field-wrapper">
+                                <div class="football-field-outer">
+                                    <div class="football-field" id="rate-field">
+                                        <span class="yard-label left y-10">10~</span>
+                                        <span class="yard-label left y-5">5</span>
+                                        <span class="yard-label left y-0">0</span>
+                                        <span class="yard-label right y-10">10~</span>
+                                        <span class="yard-label right y-5">5</span>
+                                        <span class="yard-label right y-0">0</span>
+
+                                        <div class="zone rate-zone" data-zone="7"><span class="bg-number">7</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="8"><span class="bg-number">8</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="9"><span class="bg-number">9</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="4"><span class="bg-number">4</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="5"><span class="bg-number">5</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="6"><span class="bg-number">6</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="1"><span class="bg-number">1</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="2"><span class="bg-number">2</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone rate-zone" data-zone="3"><span class="bg-number">3</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+
+                                        <div class="los">
+                                            <div class="los-zone left"></div>
+                                            <div class="los-zone middle"></div>
+                                            <div class="los-zone right"></div>
+                                            <div class="football">🏈</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Pass Zone Heat Map -->
+                        <div class="field-panel">
+                            <div class="panel-header">
+                                <h2>Pass Zone (投球割合)</h2>
+                                <div class="panel-total">Total Passes: <span id="total-count">0</span></div>
+                            </div>
+                            <div class="legend">
+                                <div class="legend-item"><span class="color-box over-20"></span>Over 20%</div>
+                                <div class="legend-item"><span class="color-box over-10"></span>Over 10%</div>
+                                <div class="legend-item"><span class="color-box under-10"></span>Under 10%</div>
+                                <div class="legend-item"><span class="color-box zero"></span>0%</div>
+                            </div>
+                            <div class="football-field-wrapper">
+                                <div class="football-field-outer">
+                                    <div class="football-field" id="heat-field">
+                                        <span class="yard-label left y-10">10~</span>
+                                        <span class="yard-label left y-5">5</span>
+                                        <span class="yard-label left y-0">0</span>
+                                        <span class="yard-label right y-10">10~</span>
+                                        <span class="yard-label right y-5">5</span>
+                                        <span class="yard-label right y-0">0</span>
+
+                                        <div class="zone" data-zone="7"><span class="bg-number">7</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="8"><span class="bg-number">8</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="9"><span class="bg-number">9</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="4"><span class="bg-number">4</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="5"><span class="bg-number">5</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="6"><span class="bg-number">6</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="1"><span class="bg-number">1</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="2"><span class="bg-number">2</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                        <div class="zone" data-zone="3"><span class="bg-number">3</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+
+                                        <div class="los">
+                                            <div class="los-zone left"></div>
+                                            <div class="los-zone middle"></div>
+                                            <div class="los-zone right"></div>
+                                            <div class="football">🏈</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Table -->
+                <div class="summary-table-section">
+                    <div class="summary-table-header">
+                        <h3>📊 ゾーン別集計表</h3>
+                    </div>
+                    <table class="summary-table">
+                        <thead>
+                            <tr>
+                                <th>ゾーン</th>
+                                <th>深さ / 方向</th>
+                                <th>投球数 (Att)</th>
+                                <th>投球割合 (%)</th>
+                                <th>成功 (Comp)</th>
+                                <th>不成功 (Inc)</th>
+                                <th>成功率 (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-table-body">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const uploadArea = document.getElementById('upload-area');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const heatmapContainer = document.getElementById('heatmap-container');
+    const resetBtn = document.getElementById('reset-btn');
+    const fileNameTag = document.getElementById('file-name-tag');
+    const totalBadge = document.getElementById('total-badge');
+    const compBadge = document.getElementById('comp-badge');
+    const totalCountEl = document.getElementById('total-count');
+    const rateTotalEl = document.getElementById('rate-total');
+    const heatField = document.getElementById('heat-field');
+    const rateField = document.getElementById('rate-field');
+    const summaryTableBody = document.getElementById('summary-table-body');
+    const fieldsScaler = document.getElementById('fields-scaler');
+    const fieldsRow = document.getElementById('fields-row');
+
+    // Parsed plays: array of { zone, isSuccess }
+    let plays = [];
+
+    // Drag & drop handlers
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
+        dropZone.addEventListener(ev, preventDefaults, false);
+        document.body.addEventListener(ev, preventDefaults, false);
+    });
+    function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+    ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('dragover'), false));
+    ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('dragover'), false));
+
+    dropZone.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (files.length) readFile(files[0]);
+    }, false);
+
+    fileInput.addEventListener('change', e => {
+        if (e.target.files.length) readFile(e.target.files[0]);
+        fileInput.value = '';
+    });
+
+    function readFile(file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                parseExcel(rows, file.name);
+            } catch (err) {
+                console.error(err);
+                alert(`「${file.name}」の読み込みに失敗しました。ExcelまたはCSV形式であることをご確認ください。`);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    const norm = v => String(v ?? '').replace(/[\s_\-　]/g, '').toUpperCase();
+    const clean = v => String(v ?? '').trim();
+    const fmtPct = v => `${v % 1 === 0 ? v : v.toFixed(1)}%`;
+
+    function parseExcel(rows, fileName) {
+        if (!rows || rows.length < 2) {
+            alert("データ行が見つかりませんでした。");
+            return;
+        }
+
+        // Header search in top 10 rows
+        let headerIdx = -1;
+        let zoneCol = -1;
+        let resCol = -1;
+
+        for (let r = 0; r < Math.min(10, rows.length); r++) {
+            const row = rows[r] || [];
+            for (let c = 0; c < row.length; c++) {
+                const val = norm(row[c]);
+                if (val.includes('PASSZONE') || val === 'ZONE' || val === 'ゾーン') {
+                    zoneCol = c;
+                }
+                if (val.includes('PASSRESULT') || val === 'RESULT' || val === '結果') {
+                    resCol = c;
+                }
+            }
+            if (zoneCol !== -1 && resCol !== -1) {
+                headerIdx = r;
+                break;
+            }
+        }
+
+        // Fallback: If exact headers weren't found by string, default to columns A (index 0) and C (index 2) as in the見本
+        if (zoneCol === -1 || resCol === -1) {
+            headerIdx = 0;
+            zoneCol = 0; // A: PASS ZONE
+            resCol = 2;  // C: PASS RESULT
+        }
+
+        const dataRows = rows.slice(headerIdx + 1);
+        const parsedPlays = [];
+
+        dataRows.forEach(row => {
+            const zStr = clean(row[zoneCol]);
+            const z = parseInt(zStr, 10);
+
+            // Valid zone must be 1 to 9
+            if (!isNaN(z) && z >= 1 && z <= 9) {
+                const resVal = clean(row[resCol]).toUpperCase();
+                // Rule: Only 'G' is success, all others (NG, 投げ捨て, QSC, Sack, blank, etc.) are failure
+                const comp = (resVal === 'G');
+
+                parsedPlays.push({
+                    zone: z,
+                    isSuccess: comp
+                });
+            }
+        });
+
+        if (parsedPlays.length === 0) {
+            alert("有効なPass Zone（1〜9）のデータが見つかりませんでした。");
+            return;
+        }
+
+        plays = parsedPlays;
+        renderAll(fileName);
+    }
+
+    // Zone labels description
+    const zoneDescriptions = {
+        7: '10y以深 / Left',
+        8: '10y以深 / Middle',
+        9: '10y以深 / Right',
+        4: '5〜10y / Left',
+        5: '5〜10y / Middle',
+        6: '5〜10y / Right',
+        1: '0〜5y / Left',
+        2: '0〜5y / Middle',
+        3: '0〜5y / Right'
+    };
+
+    function renderAll(fileName) {
+        const attempts = {};
+        const comps = {};
+        for (let i = 1; i <= 9; i++) {
+            attempts[i] = 0;
+            comps[i] = 0;
+        }
+
+        let totalAttempts = plays.length;
+        let totalComps = 0;
+
+        plays.forEach(p => {
+            attempts[p.zone]++;
+            if (p.isSuccess) {
+                comps[p.zone]++;
+                totalComps++;
+            }
+        });
+
+        // 1. Controls bar info
+        fileNameTag.textContent = `📄 ${fileName}`;
+        totalBadge.textContent = `総パス: ${totalAttempts} 本`;
+        const overallRate = totalAttempts > 0 ? (totalComps / totalAttempts) * 100 : 0;
+        compBadge.textContent = `成功: ${totalComps} 本 (${fmtPct(overallRate)})`;
+
+        // 2. Render Heat Map (Right panel)
+        totalCountEl.textContent = totalAttempts;
+        for (let i = 1; i <= 9; i++) {
+            const el = heatField.querySelector(`.zone[data-zone="${i}"]`);
+            const att = attempts[i];
+            const pct = totalAttempts > 0 ? (att / totalAttempts) * 100 : 0;
+
+            el.querySelector('.percentage').textContent = fmtPct(pct);
+            el.querySelector('.fraction').textContent = `(${att}/${totalAttempts})`;
+
+            let bg = 'var(--color-zero)';
+            if (pct >= 20) bg = 'var(--color-over20)';
+            else if (pct >= 10) bg = 'var(--color-over10)';
+            else if (pct > 0) bg = 'var(--color-under10)';
+            el.style.backgroundColor = bg;
+        }
+
+        // 3. Render Pass Success Rate (Left panel)
+        rateTotalEl.textContent = totalAttempts > 0
+            ? `${fmtPct(overallRate)} (${totalComps}/${totalAttempts})`
+            : '-';
+
+        for (let i = 1; i <= 9; i++) {
+            const el = rateField.querySelector(`.zone[data-zone="${i}"]`);
+            const att = attempts[i];
+            const cmp = comps[i];
+
+            if (att === 0) {
+                el.querySelector('.percentage').textContent = '-';
+                el.querySelector('.fraction').textContent = '(0/0)';
+            } else {
+                const rate = (cmp / att) * 100;
+                el.querySelector('.percentage').textContent = fmtPct(rate);
+                el.querySelector('.fraction').textContent = `(${cmp}/${att})`;
+            }
+        }
+
+        // 4. Render Summary Table (ゾーン1〜9 & 合計)
+        let tableHtml = '';
+        // Order from deep to short (7,8,9, 4,5,6, 1,2,3)
+        const displayOrder = [7, 8, 9, 4, 5, 6, 1, 2, 3];
+        displayOrder.forEach(z => {
+            const att = attempts[z];
+            const cmp = comps[z];
+            const inc = att - cmp;
+            const throwPct = totalAttempts > 0 ? (att / totalAttempts) * 100 : 0;
+            const succPct = att > 0 ? (cmp / att) * 100 : null;
+
+            tableHtml += `
+                <tr>
+                    <td><span class="zone-badge">${z}</span></td>
+                    <td style="color:#64748b; font-size:0.9rem;">${zoneDescriptions[z]}</td>
+                    <td style="font-weight:700;">${att}</td>
+                    <td>${fmtPct(throwPct)}</td>
+                    <td style="color:#15803d; font-weight:700;">${cmp}</td>
+                    <td style="color:#dc2626;">${inc}</td>
+                    <td style="font-weight:800; color:${succPct !== null && succPct >= 50 ? '#15803d' : '#334155'};">
+                        ${succPct !== null ? fmtPct(succPct) : '-'}
+                    </td>
+                </tr>
+            `;
+        });
+
+        // Total row
+        const totalInc = totalAttempts - totalComps;
+        tableHtml += `
+            <tr class="total-row">
+                <td>Total</td>
+                <td>全ゾーン合計</td>
+                <td>${totalAttempts}</td>
+                <td>100%</td>
+                <td>${totalComps}</td>
+                <td>${totalInc}</td>
+                <td>${fmtPct(overallRate)}</td>
+            </tr>
+        `;
+        summaryTableBody.innerHTML = tableHtml;
+
+        // Switch to display view
+        uploadArea.classList.add('hidden');
+        heatmapContainer.classList.remove('hidden');
+        fitFields();
+    }
+
+    function fitFields() {
+        fieldsRow.style.zoom = 1;
+        const available = fieldsScaler.clientWidth;
+        const natural = fieldsRow.scrollWidth;
+        if (!available || !natural) return;
+        fieldsRow.style.zoom = Math.min(1, available / natural);
+    }
+    window.addEventListener('resize', fitFields);
+
+    // Reset button
+    resetBtn.addEventListener('click', () => {
+        plays = [];
+        heatmapContainer.classList.add('hidden');
+        uploadArea.classList.remove('hidden');
+    });
+
+    // Save as Image button
+    const saveImageBtn = document.getElementById('save-image-btn');
+    saveImageBtn.addEventListener('click', () => {
+        const controls = document.querySelector('.controls-bar');
+        const outers = document.querySelectorAll('.football-field-outer');
+        const fields = document.querySelectorAll('.football-field');
+
+        const savedControls = controls.style.display;
+        controls.style.display = 'none';
+
+        fieldsRow.style.zoom = 1;
+        const savedWidth = heatmapContainer.style.width;
+        heatmapContainer.style.width = 'max-content';
+
+        html2canvas(heatmapContainer, { backgroundColor: '#ffffff', scale: 2 })
+            .then(canvas => {
+                controls.style.display = savedControls;
+                heatmapContainer.style.width = savedWidth;
+                fitFields();
+
+                const link = document.createElement('a');
+                link.download = `PassZone_Analysis_${new Date().toISOString().slice(0, 10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => {
+                console.error(err);
+                controls.style.display = savedControls;
+                heatmapContainer.style.width = savedWidth;
+                fitFields();
+                alert('画像の保存に失敗しました。');
+            });
+    });
+});
+    </script>
+</body>
+</html>
