@@ -666,8 +666,8 @@ header p {
                         <div class="legend">
                             <div class="legend-item"><span class="color-box" style="background-color: #48bb78;"></span>Over 65%</div>
                             <div class="legend-item"><span class="color-box" style="background-color: #b7e4c7;"></span>50% - 64%</div>
-                            <div class="legend-item"><span class="color-box" style="background-color: #ffadad;"></span>31% - 49%</div>
-                            <div class="legend-item"><span class="color-box" style="background-color: #f45b5b;"></span>Under 30%</div>
+                            <div class="legend-item"><span class="color-box" style="background-color: #ffadad;"></span>30% - 49%</div>
+                            <div class="legend-item"><span class="color-box" style="background-color: #f45b5b;"></span>Under 29%</div>
                             <div class="legend-item" style="color: #666; font-size: 0.85rem;">(成功=G)</div>
                         </div>
                         <div class="football-field-wrapper">
@@ -951,13 +951,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 el.querySelector('.percentage').textContent = fmtPct(compPct);
                 el.querySelector('.fraction').textContent = `(${comp}/${att})`;
 
-                let bg = '#f45b5b'; // Under 30%: 濃い赤
+                let bg = '#f45b5b'; // Under 29%: 濃い赤
                 if (compPct >= 65) {
                     bg = '#48bb78'; // Over 65%: 濃い緑
                 } else if (compPct >= 50) {
                     bg = '#b7e4c7'; // 50% - 64.9%: 薄い緑
-                } else if (compPct > 30) {
-                    bg = '#ffadad'; // 31% - 49.9%: 薄い赤
+                } else if (compPct >= 30) {
+                    bg = '#ffadad'; // 30% - 49.9%: 薄い赤
                 }
                 el.style.backgroundColor = bg;
             }
