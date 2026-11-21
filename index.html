@@ -3,27 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pass Zone Heat Map & 成功率分析ツール</title>
+    <title>Pass Zone Statistics ver3</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
 :root {
-    --bg-color: #f1f5f9;
+    --bg-color: #f0f0f0;
     --card-bg: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
+    --text-main: #000000;
+    --text-muted: #555555;
     --primary: #9c1b1b;
-    --primary-hover: #7f1414;
-    --border: #cbd5e1;
+    --primary-hover: #801616;
+    --border: #d1d5db;
     
-    /* Heatmap colors */
-    --color-over20: #f45b5b; /* 20%以上: 赤 */
-    --color-over10: #ffadad; /* 10%以上: 薄いピンク/赤 */
-    --color-under10: #bdd7ee; /* 0%超〜10%未満: 薄い青 */
-    --color-zero: #5b9bd5;    /* 0%: 青 */
+    /* Pastel colors for a light theme */
+    --color-over20: #f45b5b; /* Darker Red from reference */
+    --color-over10: #ffadad; /* Light Pink/Red from reference */
+    --color-under10: #bdd7ee; /* Light Blue from reference */
+    --color-zero: #5b9bd5; /* Dark Blue from reference */
     
+    /* Field Grid Colors */
     --grid-line: #000000;
 }
 
@@ -41,17 +42,17 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 2rem 1.5rem;
+    padding: 2rem;
 }
 
 .app-container {
     width: 100%;
-    max-width: 1540px;
+    max-width: 900px;
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 2.5rem;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 header {
@@ -60,35 +61,31 @@ header {
 }
 
 h1 {
-    font-size: 2.3rem;
+    font-size: 2.5rem;
     font-weight: 800;
     margin-bottom: 0.5rem;
-    color: var(--primary);
-    letter-spacing: -0.5px;
+    color: #9c1b1b;
 }
 
 header p {
     color: var(--text-muted);
-    font-size: 1.05rem;
+    font-size: 1.1rem;
 }
 
 /* Drop Zone */
 .drop-zone {
-    border: 2px dashed #94a3b8;
-    border-radius: 12px;
-    padding: 3.5rem 2rem;
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 3rem 2rem;
     text-align: center;
-    transition: all 0.25s ease;
-    background: #f8fafc;
+    transition: all 0.3s ease;
+    background: #fafafa;
     cursor: pointer;
-    max-width: 720px;
-    margin: 0 auto;
 }
 
 .drop-zone.dragover {
     border-color: var(--primary);
     background: #fef2f2;
-    transform: scale(1.01);
 }
 
 .drop-zone-content {
@@ -100,25 +97,7 @@ header p {
 
 .upload-icon {
     color: var(--primary);
-    margin-bottom: 0.25rem;
-}
-
-.drop-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1e293b;
-}
-
-.format-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.85rem;
-    background: #e2e8f0;
-    color: #334155;
-    padding: 0.35rem 0.8rem;
-    border-radius: 9999px;
-    font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
 .or-text {
@@ -129,11 +108,11 @@ header p {
 .btn-primary {
     background-color: var(--primary);
     color: white;
-    padding: 0.75rem 1.75rem;
+    padding: 0.75rem 1.5rem;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    transition: background-color 0.2s;
     border: none;
     font-size: 1rem;
 }
@@ -142,137 +121,102 @@ header p {
     background-color: var(--primary-hover);
 }
 
-.btn-primary:active {
-    transform: scale(0.98);
-}
-
 .btn-secondary {
     background-color: transparent;
     color: var(--text-main);
     border: 1px solid var(--border);
-    padding: 0.5rem 1.1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Heatmap Container */
+.hidden {
+    display: none !important;
+}
+
+.heatmap-container {
+    animation: fadeIn 0.5s ease-out;
+    max-width: 680px;
+    margin: 0 auto;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hash Filter Tabs */
+.hash-filter {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    background: #f3f4f6;
+    padding: 0.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.hash-tab {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    padding: 0.5rem 1.5rem;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.btn-secondary:hover {
-    background-color: #f1f5f9;
-    border-color: #94a3b8;
+.hash-tab:hover {
+    color: var(--primary);
+    background: rgba(156, 27, 27, 0.1);
 }
 
-.hidden {
-    display: none !important;
+.hash-tab.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-/* Heatmap View Area (no animation to prevent html2canvas opacity bug) */
-.heatmap-container {
-    opacity: 1;
-}
-
-.controls-bar {
+.controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding: 0.75rem 1rem;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-}
-
-.file-info {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.file-name-tag {
-    font-weight: 700;
-    color: #0f172a;
-}
-
-.total-tag {
-    background: #e0f2fe;
-    color: #0369a1;
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 700;
-}
-
-.success-tag {
-    background: #dcfce7;
-    color: #15803d;
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    font-weight: 700;
-}
-
-/* Fields Layout */
-.fields-scaler {
-    display: flex;
-    justify-content: center;
-}
-
-.fields-row {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 3.5rem; /* Sufficient gap so yard labels in the middle never collide */
-    flex-wrap: nowrap;
-    flex-direction: row-reverse; /* Heat Map left, Success Rate right */
-    width: max-content;
-}
-
-.field-panel {
-    flex: 0 0 680px;
-    width: 680px;
-}
-
-.panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    padding: 0 45px;
     margin-bottom: 0.5rem;
 }
 
-.panel-header h2 {
-    font-size: 1.45rem;
-    font-weight: 800;
-    color: #9c1b1b;
+.total-passes {
+    font-size: 1.2rem;
+    font-weight: 600;
 }
 
-.panel-total {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #0f172a;
-}
-
+/* Legend */
 .legend {
     display: flex;
     justify-content: center;
-    gap: 1.25rem;
+    gap: 1.5rem;
     margin-bottom: 1rem;
     flex-wrap: wrap;
-    min-height: 28px;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #0f172a;
+    font-size: 0.9rem;
+    color: var(--text-main);
 }
 
 .color-box {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     border-radius: 4px;
     border: 1px solid var(--border);
 }
@@ -282,18 +226,12 @@ header p {
 .color-box.under-10 { background-color: var(--color-under10); }
 .color-box.zero { background-color: var(--color-zero); }
 
-.legend-note {
-    font-size: 0.9rem;
-    color: #334155;
-    font-weight: 600;
-}
-
-/* Field Graphic */
 .football-field-wrapper {
     display: flex;
     justify-content: center;
     position: relative;
     width: 100%;
+    max-width: 680px; /* Tightened from 800px to perfectly fit 600px grid + 80px label padding */
     margin: 0 auto;
     padding: 0 10px;
 }
@@ -301,21 +239,19 @@ header p {
 .yard-label {
     position: absolute;
     font-weight: 800;
-    font-size: 1.4rem;
-    color: #000000;
-    margin-top: -1.1rem;
+    font-size: 1.5rem;
+    color: #000; /* Black for light theme app */
+    margin-top: -1.1rem; /* Use margin instead of transform for html2canvas compatibility */
     z-index: 10;
 }
-
 .yard-label.left {
     right: 100%;
-    padding-right: 6px;
+    padding-right: 5px; /* Tighter against the grid */
     left: auto;
 }
-
 .yard-label.right {
     left: 100%;
-    padding-left: 6px;
+    padding-left: 5px; /* Tighter against the grid */
     right: auto;
 }
 
@@ -323,60 +259,90 @@ header p {
 .y-5 { top: 310px; }
 .y-0 { top: 466px; }
 
+/* Football Field */
 .football-field-outer {
     position: relative;
-    padding: 0 40px;
+    padding: 0 40px; /* Symmetrical space for left/right yard labels */
     width: 100%;
-    max-width: 680px;
+    max-width: 680px; /* 600px grid + 80px padding */
 }
 
 .football-field {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 150px);
-    gap: 4px;
+    gap: 4px; /* thick grid lines */
     background-color: var(--grid-line);
     border: 4px solid var(--grid-line);
-    border-bottom-width: 1px;
+    border-bottom-width: 1px; /* Very thin bottom border as requested */
     position: relative;
     width: 100%;
     max-width: 600px;
-    margin: 0 auto;
+    margin: 0 auto; /* Center the grid within the outer container */
 }
 
-/* Yard Ticks */
+/* --- Consolidated Tick Marks (Solves html2canvas rendering bugs) --- */
+/* Left side ticks (Inner and Outer) */
 .zone[data-zone="1"]::before, .zone[data-zone="4"]::before, .zone[data-zone="7"]::before,
 .zone[data-zone="3"]::before, .zone[data-zone="6"]::before, .zone[data-zone="9"]::before {
     content: '';
     position: absolute;
-    top: 0; bottom: 0; left: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
     width: 12px;
     background-color: #ffffff !important;
     box-sizing: border-box;
     border-right: 6px solid #ffffff;
     pointer-events: none;
-    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-image: linear-gradient(
+        to bottom,
+        #ffffff 0, #ffffff 29px,
+        #000 29px, #000 31px,
+        #ffffff 31px, #ffffff 59px,
+        #000 59px, #000 61px,
+        #ffffff 61px, #ffffff 89px,
+        #000 89px, #000 91px,
+        #ffffff 91px, #ffffff 119px,
+        #000 119px, #000 121px,
+        #ffffff 121px, #ffffff 150px
+    );
     background-size: 100% 150px;
     background-repeat: no-repeat;
     z-index: 5;
 }
 
+/* Right side ticks (Inner and Outer) */
 .zone[data-zone="1"]::after, .zone[data-zone="4"]::after, .zone[data-zone="7"]::after,
 .zone[data-zone="3"]::after, .zone[data-zone="6"]::after, .zone[data-zone="9"]::after {
     content: '';
     position: absolute;
-    top: 0; bottom: 0; right: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
     width: 12px;
     background-color: #ffffff !important;
     box-sizing: border-box;
     border-left: 6px solid #ffffff;
     pointer-events: none;
-    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-image: linear-gradient(
+        to bottom,
+        #ffffff 0, #ffffff 29px,
+        #000 29px, #000 31px,
+        #ffffff 31px, #ffffff 59px,
+        #000 59px, #000 61px,
+        #ffffff 61px, #ffffff 89px,
+        #000 89px, #000 91px,
+        #ffffff 91px, #ffffff 119px,
+        #000 119px, #000 121px,
+        #ffffff 121px, #ffffff 150px
+    );
     background-size: 100% 150px;
     background-repeat: no-repeat;
     z-index: 5;
 }
 
+/* White bands for middle column (Restored!) */
 .zone[data-zone="2"]::before, .zone[data-zone="5"]::before, .zone[data-zone="8"]::before {
     content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 12px; background-color: #ffffff; z-index: 5;
 }
@@ -391,7 +357,8 @@ header p {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.5s ease;
+    /* borders and box-shadow removed; white gaps drawn by ::before/::after */
 }
 
 .bg-number {
@@ -410,54 +377,65 @@ header p {
     position: relative;
     z-index: 2;
     text-align: center;
-    color: #000000;
-    text-shadow: 0 1px 2px rgba(255,255,255,0.7);
+    color: #000;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.5);
 }
 
 .percentage {
     display: block;
-    font-size: 1.85rem;
+    font-size: 1.8rem;
     font-weight: 800;
 }
 
 .fraction {
     display: block;
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 600;
     margin-top: 0.2rem;
 }
 
-.zone.rate-zone {
-    background-color: #ffffff;
-}
-
-/* Line of Scrimmage and Backfield */
+/* Line of scrimmage and Backfield area */
 .los {
     grid-column: 1 / -1;
-    height: 154px;
-    background-color: #ffffff;
-    border-top: 4px solid #cc0000;
+    height: 154px; /* One 150px row + 4px gap */
+    background-color: #fff;
+    border-top: 4px solid #cc0000; /* Restored Red line for LOS */
     position: relative;
-    margin-top: -4px;
+    margin-top: -4px; /* Pull up to cover the black grid gap */
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 4px;
+    gap: 4px; /* Match the main grid gap */
 }
 
 .los-zone {
     position: relative;
+    /* borders removed; white gaps drawn by ::before/::after */
 }
 
+/* Tick marks for the backfield */
 .los-zone.left::before, .los-zone.right::before {
     content: '';
     position: absolute;
-    top: 0; bottom: 0; left: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
     width: 12px;
     background-color: #ffffff !important;
     box-sizing: border-box;
     border-right: 6px solid #ffffff;
     pointer-events: none;
-    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-image: linear-gradient(
+        to bottom,
+        #ffffff 0, #ffffff 29px,
+        #000 29px, #000 31px,
+        #ffffff 31px, #ffffff 59px,
+        #000 59px, #000 61px,
+        #ffffff 61px, #ffffff 89px,
+        #000 89px, #000 91px,
+        #ffffff 91px, #ffffff 119px,
+        #000 119px, #000 121px,
+        #ffffff 121px, #ffffff 150px
+    );
     background-size: 100% 150px;
     background-repeat: no-repeat;
     z-index: 5;
@@ -466,105 +444,134 @@ header p {
 .los-zone.left::after, .los-zone.right::after {
     content: '';
     position: absolute;
-    top: 0; bottom: 0; right: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
     width: 12px;
     background-color: #ffffff !important;
     box-sizing: border-box;
     border-left: 6px solid #ffffff;
     pointer-events: none;
-    background-image: linear-gradient(to bottom, #fff 0, #fff 29px, #000 29px, #000 31px, #fff 31px, #fff 59px, #000 59px, #000 61px, #fff 61px, #fff 89px, #000 89px, #000 91px, #fff 91px, #fff 119px, #000 119px, #000 121px, #fff 121px, #fff 150px);
+    background-image: linear-gradient(
+        to bottom,
+        #ffffff 0, #ffffff 29px,
+        #000 29px, #000 31px,
+        #ffffff 31px, #ffffff 59px,
+        #000 59px, #000 61px,
+        #ffffff 61px, #ffffff 89px,
+        #000 89px, #000 91px,
+        #ffffff 91px, #ffffff 119px,
+        #000 119px, #000 121px,
+        #ffffff 121px, #ffffff 150px
+    );
     background-size: 100% 150px;
     background-repeat: no-repeat;
     z-index: 5;
 }
 
+/* White bands for middle column (Restored!) */
 .los-zone.center::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 12px; background-color: #ffffff; z-index: 5; }
 .los-zone.center::after { content: ''; position: absolute; top: 0; bottom: 0; right: 0; width: 12px; background-color: #ffffff; z-index: 5; }
 
 .football {
     font-size: 2rem;
     position: absolute;
-    top: 40px;
+    top: 40px; /* Placed in the backfield behind the LOS */
     left: 50%;
     transform: translate(-50%, -50%) rotate(90deg);
+    transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10;
 }
 
-/* Summary Table Section */
-.summary-table-section {
-    max-width: 1000px;
-    margin: 2.5rem auto 0;
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+/* Responsive */
+@media (max-width: 600px) {
+    .football-field {
+        grid-template-rows: repeat(3, 100px);
+    }
+    .bg-number { font-size: 5rem; }
+    .percentage { font-size: 1.3rem; }
+    .fraction { font-size: 0.9rem; }
 }
 
-.summary-table-header {
-    background: #f8fafc;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid var(--border);
+
+/* ===== ver2 additions ===== */
+.app-container { max-width: none; width: auto; }
+.heatmap-container { max-width: none; }
+
+.upload-status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 1.5rem auto 0;
+    max-width: 640px;
+}
+.status-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.summary-table-header h3 {
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #0f172a;
-}
-
-.summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: center;
-    font-size: 0.95rem;
-}
-
-.summary-table th {
-    background-color: #f1f5f9;
-    color: #0f172a;
-    font-weight: 800;
+    gap: 1rem;
     padding: 0.75rem 1rem;
-    border-bottom: 2px solid #cbd5e1;
-}
-
-.summary-table td {
-    padding: 0.7rem 1rem;
-    border-bottom: 1px solid #e2e8f0;
-    color: #0f172a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fafafa;
     font-weight: 600;
 }
+.status-row .status-value { color: var(--text-muted); font-weight: 500; text-align: right; word-break: break-all; }
+.status-row.loaded { border-color: #16a34a; background: #f0fdf4; }
+.status-row.loaded .status-value { color: #15803d; }
+.show-btn-wrap { text-align: center; margin-top: 1.25rem; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.summary-table tbody tr:hover {
-    background-color: #f8fafc;
+.fields-scaler {
+    display: flex;
+    justify-content: center;
 }
-
-.summary-table tr.total-row {
+.fields-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    width: max-content;
+}
+.field-panel {
+    flex: 0 0 700px;
+    width: 700px;
+}
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 50px;
+    margin-bottom: 0.5rem;
+}
+.panel-header h2 {
+    font-size: 1.4rem;
     font-weight: 800;
-    background-color: #fef2f2;
     color: var(--primary);
-    border-top: 2px solid #cbd5e1;
+}
+.panel-total {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+.legend { min-height: 28px; }
+.legend-note {
+    font-size: 0.9rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+}
+.zone.rate-zone { background-color: #ffffff; }
+
+.unmatched-note {
+    text-align: center;
+    color: #b45309;
+    font-size: 0.9rem;
+    margin-top: 1rem;
 }
 
-.summary-table tr.total-row td {
-    color: var(--primary);
-    font-weight: 800;
-}
-
-.zone-badge {
-    display: inline-block;
-    width: 28px;
-    height: 28px;
-    line-height: 28px;
-    border-radius: 50%;
-    background: #e2e8f0;
-    font-weight: 800;
-    color: #0f172a;
-}
-    </style>
+</style>
     <!-- SheetJS for Excel parsing -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <!-- html2canvas for image export -->
@@ -573,20 +580,16 @@ header p {
 <body>
     <div class="app-container">
         <header>
-            <h1>Pass Zone Heat Map & 成功率分析</h1>
-            <p>Excelファイルをドロップすると、Pass Zoneの絵（投球割合 & 成功率）と集計表を自動出力します</p>
+            <h1>Pass Zone Statistics (ver3)</h1>
+            <p>Excelファイルをドラッグ＆ドロップするだけで、投球割合と成功率を自動表示します</p>
         </header>
 
         <main>
-            <!-- Drop Area -->
             <div id="upload-area">
                 <div id="drop-zone" class="drop-zone">
                     <div class="drop-zone-content">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        <p class="drop-title">ここにExcelファイルをドラッグ＆ドロップ</p>
-                        <div class="format-badge">
-                            <span>対応形式: PASS ZONE / OPP PASSER / PASS RESULT / PLAY TYPE / GN/LS</span>
-                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        <p>ここにExcel/CSVファイルをドラッグ＆ドロップ</p>
                         <span class="or-text">または</span>
                         <label for="file-input" class="btn-primary">ファイルを選択</label>
                         <input type="file" id="file-input" accept=".xlsx, .xls, .csv" hidden>
@@ -594,130 +597,113 @@ header p {
                 </div>
             </div>
 
-            <!-- Visualization & Table Container -->
             <div id="heatmap-container" class="heatmap-container hidden">
-                <div class="controls-bar">
-                    <div class="file-info">
-                        <span class="file-name-tag" id="file-name-tag">📄 ファイル名</span>
-                        <span class="total-tag" id="total-badge">総パス: 0 本</span>
-                        <span class="success-tag" id="comp-badge">成功: 0 本 (0%)</span>
-                    </div>
+                <div id="hash-filter-bar" class="hash-filter">
+                    <button class="hash-tab active" data-hash="ALL">ALL</button>
+                    <button class="hash-tab" data-hash="L">Left (L)</button>
+                    <button class="hash-tab" data-hash="M">Middle (M)</button>
+                    <button class="hash-tab" data-hash="R">Right (R)</button>
+                </div>
+
+                <div class="controls">
                     <div>
                         <button id="reset-btn" class="btn-secondary">別のファイルを読み込む</button>
-                        <button id="save-image-btn" class="btn-primary" style="margin-left: 0.5rem; padding: 0.5rem 1.25rem;">画像として保存</button>
+                        <button id="save-image-btn" class="btn-primary" style="margin-left: 0.5rem; padding: 0.5rem 1rem;">画像として保存</button>
                     </div>
                 </div>
 
-                <!-- Fields Graphic (Side by Side) -->
                 <div class="fields-scaler" id="fields-scaler">
-                    <div class="fields-row" id="fields-row">
-                        <!-- Left: Pass Success Rate -->
-                        <div class="field-panel">
-                            <div class="panel-header">
-                                <h2>Pass Success Rate (成功率)</h2>
-                                <div class="panel-total">Complete: <span id="rate-total">-</span></div>
-                            </div>
-                            <div class="legend">
-                                <div class="legend-note">※ G = 成功 ／ それ以外（NG、投げ捨て、QSC等） = 不成功</div>
-                            </div>
-                            <div class="football-field-wrapper">
-                                <div class="football-field-outer">
-                                    <div class="football-field" id="rate-field">
-                                        <span class="yard-label left y-10">10~</span>
-                                        <span class="yard-label left y-5">5</span>
-                                        <span class="yard-label left y-0">0</span>
-                                        <span class="yard-label right y-10">10~</span>
-                                        <span class="yard-label right y-5">5</span>
-                                        <span class="yard-label right y-0">0</span>
+                <div class="fields-row" id="fields-row">
+                    <!-- ===== Left: Pass Zone Heat Map ===== -->
+                    <div class="field-panel">
+                        <div class="panel-header">
+                            <h2>Pass Zone</h2>
+                            <div class="panel-total">Total Passes: <span id="total-count">0</span></div>
+                        </div>
+                        <div class="legend">
+                            <div class="legend-item"><span class="color-box over-20"></span>Over 20%</div>
+                            <div class="legend-item"><span class="color-box over-10"></span>Over 10%</div>
+                            <div class="legend-item"><span class="color-box under-10"></span>Under 10%</div>
+                            <div class="legend-item"><span class="color-box zero"></span>0%</div>
+                        </div>
+                        <div class="football-field-wrapper">
+                            <div class="football-field-outer">
+                                <div class="football-field" id="heat-field">
+                                    <span class="yard-label left y-10">10~</span>
+                                    <span class="yard-label left y-5">5</span>
+                                    <span class="yard-label left y-0">0</span>
+                                    <span class="yard-label right y-10">10~</span>
+                                    <span class="yard-label right y-5">5</span>
+                                    <span class="yard-label right y-0">0</span>
 
-                                        <div class="zone rate-zone" data-zone="7"><span class="bg-number">7</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="8"><span class="bg-number">8</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="9"><span class="bg-number">9</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="4"><span class="bg-number">4</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="5"><span class="bg-number">5</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="6"><span class="bg-number">6</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="1"><span class="bg-number">1</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="2"><span class="bg-number">2</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone rate-zone" data-zone="3"><span class="bg-number">3</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="7"><span class="bg-number">7</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="8"><span class="bg-number">8</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="9"><span class="bg-number">9</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="4"><span class="bg-number">4</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="5"><span class="bg-number">5</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="6"><span class="bg-number">6</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="1"><span class="bg-number">1</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="2"><span class="bg-number">2</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone" data-zone="3"><span class="bg-number">3</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
 
-                                        <div class="los">
-                                            <div class="los-zone left"></div>
-                                            <div class="los-zone middle"></div>
-                                            <div class="los-zone right"></div>
-                                            <div class="football">🏈</div>
-                                        </div>
+                                    <div class="los">
+                                        <div class="los-zone left"></div>
+                                        <div class="los-zone middle"></div>
+                                        <div class="los-zone right"></div>
+                                        <div class="football">🏈</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Right: Pass Zone Heat Map -->
-                        <div class="field-panel">
-                            <div class="panel-header">
-                                <h2>Pass Zone (投球割合)</h2>
-                                <div class="panel-total">Total Passes: <span id="total-count">0</span></div>
-                            </div>
-                            <div class="legend">
-                                <div class="legend-item"><span class="color-box over-20"></span>Over 20%</div>
-                                <div class="legend-item"><span class="color-box over-10"></span>Over 10%</div>
-                                <div class="legend-item"><span class="color-box under-10"></span>Under 10%</div>
-                                <div class="legend-item"><span class="color-box zero"></span>0%</div>
-                            </div>
-                            <div class="football-field-wrapper">
-                                <div class="football-field-outer">
-                                    <div class="football-field" id="heat-field">
-                                        <span class="yard-label left y-10">10~</span>
-                                        <span class="yard-label left y-5">5</span>
-                                        <span class="yard-label left y-0">0</span>
-                                        <span class="yard-label right y-10">10~</span>
-                                        <span class="yard-label right y-5">5</span>
-                                        <span class="yard-label right y-0">0</span>
+                    <!-- ===== Right: Pass Success Rate ===== -->
+                    <div class="field-panel">
+                        <div class="panel-header">
+                            <h2>Pass Success Rate</h2>
+                            <div class="panel-total">Complete: <span id="rate-total">-</span></div>
+                        </div>
+                        <div class="legend">
+                            <div class="legend-item"><span class="color-box" style="background-color: #48bb78;"></span>Over 65%</div>
+                            <div class="legend-item"><span class="color-box" style="background-color: #b7e4c7;"></span>50% - 64%</div>
+                            <div class="legend-item"><span class="color-box" style="background-color: #ffadad;"></span>31% - 49%</div>
+                            <div class="legend-item"><span class="color-box" style="background-color: #f45b5b;"></span>Under 30%</div>
+                            <div class="legend-item" style="color: #666; font-size: 0.85rem;">(成功=G)</div>
+                        </div>
+                        <div class="football-field-wrapper">
+                            <div class="football-field-outer">
+                                <div class="football-field" id="rate-field">
+                                    <span class="yard-label left y-10">10~</span>
+                                    <span class="yard-label left y-5">5</span>
+                                    <span class="yard-label left y-0">0</span>
+                                    <span class="yard-label right y-10">10~</span>
+                                    <span class="yard-label right y-5">5</span>
+                                    <span class="yard-label right y-0">0</span>
 
-                                        <div class="zone" data-zone="7"><span class="bg-number">7</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="8"><span class="bg-number">8</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="9"><span class="bg-number">9</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="4"><span class="bg-number">4</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="5"><span class="bg-number">5</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="6"><span class="bg-number">6</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="1"><span class="bg-number">1</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="2"><span class="bg-number">2</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
-                                        <div class="zone" data-zone="3"><span class="bg-number">3</span><div class="data-content"><span class="percentage">0%</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="7"><span class="bg-number">7</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="8"><span class="bg-number">8</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="9"><span class="bg-number">9</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="4"><span class="bg-number">4</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="5"><span class="bg-number">5</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="6"><span class="bg-number">6</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="1"><span class="bg-number">1</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="2"><span class="bg-number">2</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
+                                    <div class="zone rate-zone" data-zone="3"><span class="bg-number">3</span><div class="data-content"><span class="percentage">-</span><span class="fraction">(0/0)</span></div></div>
 
-                                        <div class="los">
-                                            <div class="los-zone left"></div>
-                                            <div class="los-zone middle"></div>
-                                            <div class="los-zone right"></div>
-                                            <div class="football">🏈</div>
-                                        </div>
+                                    <div class="los">
+                                        <div class="los-zone left"></div>
+                                        <div class="los-zone middle"></div>
+                                        <div class="los-zone right"></div>
+                                        <div class="football">🏈</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- Summary Table -->
-                <div class="summary-table-section">
-                    <div class="summary-table-header">
-                        <h3>📊 ゾーン別集計表</h3>
-                    </div>
-                    <table class="summary-table">
-                        <thead>
-                            <tr>
-                                <th>ゾーン</th>
-                                <th>深さ / 方向</th>
-                                <th>投球数 (Att)</th>
-                                <th>投球割合 (%)</th>
-                                <th>成功 (Comp)</th>
-                                <th>不成功 (Inc)</th>
-                                <th>成功率 (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="summary-table-body">
-                            <!-- Injected by JS -->
-                        </tbody>
-                    </table>
                 </div>
+
+                <div id="info-note" class="unmatched-note hidden"></div>
             </div>
         </main>
     </div>
@@ -728,246 +714,168 @@ document.addEventListener('DOMContentLoaded', () => {
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const heatmapContainer = document.getElementById('heatmap-container');
+    const hashFilterBar = document.getElementById('hash-filter-bar');
     const resetBtn = document.getElementById('reset-btn');
-    const fileNameTag = document.getElementById('file-name-tag');
-    const totalBadge = document.getElementById('total-badge');
-    const compBadge = document.getElementById('comp-badge');
     const totalCountEl = document.getElementById('total-count');
     const rateTotalEl = document.getElementById('rate-total');
+    const infoNote = document.getElementById('info-note');
+    const hashTabs = document.querySelectorAll('.hash-tab');
     const heatField = document.getElementById('heat-field');
     const rateField = document.getElementById('rate-field');
-    const summaryTableBody = document.getElementById('summary-table-body');
     const fieldsScaler = document.getElementById('fields-scaler');
     const fieldsRow = document.getElementById('fields-row');
 
-    // Parsed plays: array of { zone, isSuccess }
-    let plays = [];
+    let allPlays = []; // [{ zone, hash, result }]
+    let currentHashFilter = 'ALL';
+    let hasHashColumn = false;
 
-    // Drag & drop handlers
+    // ---------- Drag & Drop ----------
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => {
         dropZone.addEventListener(ev, preventDefaults, false);
         document.body.addEventListener(ev, preventDefaults, false);
     });
     function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-
     ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('dragover'), false));
     ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('dragover'), false));
 
     dropZone.addEventListener('drop', e => {
-        const files = e.dataTransfer.files;
-        if (files.length) readFile(files[0]);
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
     }, false);
 
     fileInput.addEventListener('change', e => {
-        if (e.target.files.length) readFile(e.target.files[0]);
+        if (e.target.files.length) handleFile(e.target.files[0]);
         fileInput.value = '';
     });
 
-    function readFile(file) {
+    function handleFile(file) {
         const reader = new FileReader();
         reader.onload = e => {
             try {
                 const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
                 const ws = wb.Sheets[wb.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-                parseExcel(rows, file.name);
+                processRows(rows, file.name);
             } catch (err) {
                 console.error(err);
-                alert(`「${file.name}」の読み込みに失敗しました。ExcelまたはCSV形式であることをご確認ください。`);
+                alert(`「${file.name}」の読み込みに失敗しました。ExcelまたはCSVファイルか確認してください。`);
             }
         };
         reader.readAsArrayBuffer(file);
     }
 
-    const norm = v => String(v ?? '').replace(/[\s_\-　]/g, '').toUpperCase();
+    const norm = v => String(v ?? '').replace(/[\s_#（）\(\)]/g, '').toUpperCase();
     const clean = v => String(v ?? '').trim();
     const fmtPct = v => `${v % 1 === 0 ? v : v.toFixed(1)}%`;
 
-    function parseExcel(rows, fileName) {
-        if (!rows || rows.length < 2) {
-            alert("データ行が見つかりませんでした。");
+    function processRows(rows, fileName) {
+        if (!rows || rows.length === 0) {
+            alert('ファイル内にデータが見つかりませんでした。');
             return;
         }
 
-        // Header search in top 10 rows
+        // Find header row (search in first 10 rows)
         let headerIdx = -1;
-        let zoneCol = -1;
-        let resCol = -1;
-
-        for (let r = 0; r < Math.min(10, rows.length); r++) {
-            const row = rows[r] || [];
-            for (let c = 0; c < row.length; c++) {
-                const val = norm(row[c]);
-                if (val.includes('PASSZONE') || val === 'ZONE' || val === 'ゾーン') {
-                    zoneCol = c;
-                }
-                if (val.includes('PASSRESULT') || val === 'RESULT' || val === '結果') {
-                    resCol = c;
-                }
-            }
-            if (zoneCol !== -1 && resCol !== -1) {
-                headerIdx = r;
+        let h = null;
+        for (let i = 0; i < Math.min(10, rows.length); i++) {
+            const cand = (rows[i] || []).map(norm);
+            if (cand.some(x => x.includes('PASSZONE') || x === 'ZONE' || x === 'ゾーン')) {
+                headerIdx = i;
+                h = cand;
                 break;
             }
         }
 
-        // Fallback: If exact headers weren't found by string, default to columns A (index 0) and C (index 2) as in the見本
-        if (zoneCol === -1 || resCol === -1) {
-            headerIdx = 0;
-            zoneCol = 0; // A: PASS ZONE
-            resCol = 2;  // C: PASS RESULT
-        }
-
-        const dataRows = rows.slice(headerIdx + 1);
-        const parsedPlays = [];
-
-        dataRows.forEach(row => {
-            const zStr = clean(row[zoneCol]);
-            const z = parseInt(zStr, 10);
-
-            // Valid zone must be 1 to 9
-            if (!isNaN(z) && z >= 1 && z <= 9) {
-                const resVal = clean(row[resCol]).toUpperCase();
-                // Rule: Only 'G' is success, all others (NG, 投げ捨て, QSC, Sack, blank, etc.) are failure
-                const comp = (resVal === 'G');
-
-                parsedPlays.push({
-                    zone: z,
-                    isSuccess: comp
-                });
-            }
-        });
-
-        if (parsedPlays.length === 0) {
-            alert("有効なPass Zone（1〜9）のデータが見つかりませんでした。");
+        if (headerIdx < 0) {
+            alert(`「${fileName}」から「PASS ZONE」列が見つかりませんでした。1行目の列名を確認してください。`);
             return;
         }
 
-        plays = parsedPlays;
-        renderAll(fileName);
-    }
+        // Identify columns
+        const zoneCol = h.findIndex(x => x.includes('PASSZONE') || x === 'ZONE' || x === 'ゾーン');
+        const playTypeCol = h.findIndex(x => x.includes('PLAYTYPE') || x === 'TYPE');
+        const resultCol = h.findIndex(x => x.includes('PASSRESULT') || x === 'RESULT' || x === '成否' || x === '結果');
+        const hashCol = h.findIndex(x => x === 'HASH' || x.includes('HASH') || x === 'ハッシュ');
 
-    // Zone labels description
-    const zoneDescriptions = {
-        7: '10y以深 / Left',
-        8: '10y以深 / Middle',
-        9: '10y以深 / Right',
-        4: '5〜10y / Left',
-        5: '5〜10y / Middle',
-        6: '5〜10y / Right',
-        1: '0〜5y / Left',
-        2: '0〜5y / Middle',
-        3: '0〜5y / Right'
-    };
-
-    function renderAll(fileName) {
-        const attempts = {};
-        const comps = {};
-        for (let i = 1; i <= 9; i++) {
-            attempts[i] = 0;
-            comps[i] = 0;
+        hasHashColumn = (hashCol >= 0);
+        if (hasHashColumn) {
+            hashFilterBar.classList.remove('hidden');
+        } else {
+            hashFilterBar.classList.add('hidden');
         }
 
-        let totalAttempts = plays.length;
-        let totalComps = 0;
+        const data = rows.slice(headerIdx + 1);
+        const parsed = [];
+        let totalPassPlays = 0;
+        let skippedRun = 0;
+        let skippedNoZone = 0;
 
-        plays.forEach(p => {
-            attempts[p.zone]++;
-            if (p.isSuccess) {
-                comps[p.zone]++;
-                totalComps++;
+        data.forEach(r => {
+            // Check PLAY TYPE if column exists
+            if (playTypeCol >= 0) {
+                const pt = clean(r[playTypeCol]).toUpperCase();
+                if (pt !== 'PASS') {
+                    if (pt === 'RUN') skippedRun++;
+                    return; // Skip non-pass (Run, blank, etc.)
+                }
             }
+
+            totalPassPlays++;
+
+            // Check PASS ZONE
+            const zStr = clean(r[zoneCol]);
+            const z = parseInt(zStr, 10);
+            if (isNaN(z) || z < 1 || z > 9) {
+                skippedNoZone++;
+                return; // Skip if no valid zone 1-9
+            }
+
+            // PASS RESULT
+            const res = (resultCol >= 0) ? clean(r[resultCol]).toUpperCase() : '';
+            const isComplete = (res === 'G');
+
+            // HASH
+            const hashVal = (hashCol >= 0) ? clean(r[hashCol]).toUpperCase() : 'ALL';
+
+            parsed.push({
+                zone: z,
+                hash: hashVal,
+                isComplete: isComplete,
+                rawResult: res
+            });
         });
 
-        // 1. Controls bar info
-        fileNameTag.textContent = `📄 ${fileName}`;
-        totalBadge.textContent = `総パス: ${totalAttempts} 本`;
-        const overallRate = totalAttempts > 0 ? (totalComps / totalAttempts) * 100 : 0;
-        compBadge.textContent = `成功: ${totalComps} 本 (${fmtPct(overallRate)})`;
-
-        // 2. Render Heat Map (Right panel)
-        totalCountEl.textContent = totalAttempts;
-        for (let i = 1; i <= 9; i++) {
-            const el = heatField.querySelector(`.zone[data-zone="${i}"]`);
-            const att = attempts[i];
-            const pct = totalAttempts > 0 ? (att / totalAttempts) * 100 : 0;
-
-            el.querySelector('.percentage').textContent = fmtPct(pct);
-            el.querySelector('.fraction').textContent = `(${att}/${totalAttempts})`;
-
-            let bg = 'var(--color-zero)';
-            if (pct >= 20) bg = 'var(--color-over20)';
-            else if (pct >= 10) bg = 'var(--color-over10)';
-            else if (pct > 0) bg = 'var(--color-under10)';
-            el.style.backgroundColor = bg;
+        if (parsed.length === 0) {
+            alert(`「${fileName}」に対象となるPassデータ（PLAY TYPE = Pass かつ PASS ZONE = 1〜9）が見つかりませんでした。`);
+            return;
         }
 
-        // 3. Render Pass Success Rate (Left panel)
-        rateTotalEl.textContent = totalAttempts > 0
-            ? `${fmtPct(overallRate)} (${totalComps}/${totalAttempts})`
-            : '-';
+        allPlays = parsed;
+        currentHashFilter = 'ALL';
+        updateHashTabs();
+        render();
 
-        for (let i = 1; i <= 9; i++) {
-            const el = rateField.querySelector(`.zone[data-zone="${i}"]`);
-            const att = attempts[i];
-            const cmp = comps[i];
-
-            if (att === 0) {
-                el.querySelector('.percentage').textContent = '-';
-                el.querySelector('.fraction').textContent = '(0/0)';
-            } else {
-                const rate = (cmp / att) * 100;
-                el.querySelector('.percentage').textContent = fmtPct(rate);
-                el.querySelector('.fraction').textContent = `(${cmp}/${att})`;
-            }
+        // Informational notes
+        const notes = [];
+        if (playTypeCol >= 0 && skippedRun > 0) {
+            notes.push(`Runのプレイ ${skippedRun} 件は除外`);
+        }
+        if (skippedNoZone > 0) {
+            notes.push(`Zone未記入のPass ${skippedNoZone} 件は除外`);
+        }
+        if (notes.length) {
+            infoNote.textContent = `※ ${notes.join(' / ')} しています（有効Pass数: ${parsed.length}本）`;
+            infoNote.classList.remove('hidden');
+        } else {
+            infoNote.classList.add('hidden');
         }
 
-        // 4. Render Summary Table (ゾーン1〜9 & 合計)
-        let tableHtml = '';
-        const displayOrder = [7, 8, 9, 4, 5, 6, 1, 2, 3];
-        displayOrder.forEach(z => {
-            const att = attempts[z];
-            const cmp = comps[z];
-            const inc = att - cmp;
-            const throwPct = totalAttempts > 0 ? (att / totalAttempts) * 100 : 0;
-            const succPct = att > 0 ? (cmp / att) * 100 : null;
-
-            tableHtml += `
-                <tr>
-                    <td><span class="zone-badge">${z}</span></td>
-                    <td style="color:#475569; font-size:0.9rem;">${zoneDescriptions[z]}</td>
-                    <td style="font-weight:700;">${att}</td>
-                    <td>${fmtPct(throwPct)}</td>
-                    <td style="color:#15803d; font-weight:700;">${cmp}</td>
-                    <td style="color:#dc2626;">${inc}</td>
-                    <td style="font-weight:800; color:${succPct !== null && succPct >= 50 ? '#15803d' : '#0f172a'};">
-                        ${succPct !== null ? fmtPct(succPct) : '-'}
-                    </td>
-                </tr>
-            `;
-        });
-
-        // Total row
-        const totalInc = totalAttempts - totalComps;
-        tableHtml += `
-            <tr class="total-row">
-                <td>Total</td>
-                <td>全ゾーン合計</td>
-                <td>${totalAttempts}</td>
-                <td>100%</td>
-                <td>${totalComps}</td>
-                <td>${totalInc}</td>
-                <td>${fmtPct(overallRate)}</td>
-            </tr>
-        `;
-        summaryTableBody.innerHTML = tableHtml;
-
-        // Switch to display view
+        // Switch screen
         uploadArea.classList.add('hidden');
         heatmapContainer.classList.remove('hidden');
         fitFields();
     }
 
+    // ---------- Fit side-by-side on window ----------
     function fitFields() {
         fieldsRow.style.zoom = 1;
         const available = fieldsScaler.clientWidth;
@@ -977,68 +885,154 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.addEventListener('resize', fitFields);
 
-    // Reset button
-    resetBtn.addEventListener('click', () => {
-        plays = [];
-        heatmapContainer.classList.add('hidden');
-        uploadArea.classList.remove('hidden');
+    // ---------- Hash Tabs ----------
+    hashTabs.forEach(tab => {
+        tab.addEventListener('click', e => {
+            currentHashFilter = e.target.dataset.hash;
+            updateHashTabs();
+            render();
+        });
     });
 
-    // Save as Image button
+    function updateHashTabs() {
+        hashTabs.forEach(tab => tab.classList.toggle('active', tab.dataset.hash === currentHashFilter));
+        const left = currentHashFilter === 'L' ? '33.33%' : currentHashFilter === 'R' ? '66.66%' : '50%';
+        document.querySelectorAll('.football').forEach(f => f.style.left = left);
+    }
+
+    // ---------- Aggregate & Render ----------
+    function render() {
+        const attempts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+        const comps = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0 };
+        let totalPasses = 0;
+        let totalComps = 0;
+
+        allPlays.forEach(p => {
+            if (currentHashFilter !== 'ALL' && p.hash !== currentHashFilter) return;
+            attempts[p.zone]++;
+            totalPasses++;
+            if (p.isComplete) {
+                comps[p.zone]++;
+                totalComps++;
+            }
+        });
+
+        // 1. Render Left: Pass Zone (Heat Map)
+        totalCountEl.textContent = totalPasses;
+        for (let i = 1; i <= 9; i++) {
+            const el = heatField.querySelector(`.zone[data-zone="${i}"]`);
+            const count = attempts[i];
+            const pct = totalPasses > 0 ? (count / totalPasses) * 100 : 0;
+            el.querySelector('.percentage').textContent = fmtPct(pct);
+            el.querySelector('.fraction').textContent = `(${count}/${totalPasses})`;
+
+            let bg = 'var(--color-zero)';
+            if (pct >= 20) bg = 'var(--color-over20)';
+            else if (pct >= 10) bg = 'var(--color-over10)';
+            else if (pct > 0) bg = 'var(--color-under10)';
+            el.style.backgroundColor = bg;
+        }
+
+        // 2. Render Right: Pass Success Rate
+        rateTotalEl.textContent = totalPasses > 0 
+            ? `${fmtPct((totalComps / totalPasses) * 100)} (${totalComps}/${totalPasses})` 
+            : '-';
+
+        for (let i = 1; i <= 9; i++) {
+            const el = rateField.querySelector(`.zone[data-zone="${i}"]`);
+            const att = attempts[i];
+            const comp = comps[i];
+            if (att === 0) {
+                el.querySelector('.percentage').textContent = '-';
+                el.querySelector('.fraction').textContent = '(0/0)';
+                el.style.backgroundColor = '#ffffff'; // 0/0（未投球）: 白
+            } else {
+                const compPct = (comp / att) * 100;
+                el.querySelector('.percentage').textContent = fmtPct(compPct);
+                el.querySelector('.fraction').textContent = `(${comp}/${att})`;
+
+                let bg = '#f45b5b'; // Under 30%: 濃い赤
+                if (compPct >= 65) {
+                    bg = '#48bb78'; // Over 65%: 濃い緑
+                } else if (compPct >= 50) {
+                    bg = '#b7e4c7'; // 50% - 64.9%: 薄い緑
+                } else if (compPct > 30) {
+                    bg = '#ffadad'; // 31% - 49.9%: 薄い赤
+                }
+                el.style.backgroundColor = bg;
+            }
+        }
+    }
+
+    // ---------- Reset ----------
+    resetBtn.addEventListener('click', () => {
+        allPlays = [];
+        currentHashFilter = 'ALL';
+        updateHashTabs();
+
+        for (let i = 1; i <= 9; i++) {
+            const rel = rateField.querySelector();
+            if (rel) rel.style.backgroundColor = '#ffffff';
+        }
+
+        heatmapContainer.classList.add('hidden');
+        uploadArea.classList.remove('hidden');
+        infoNote.classList.add('hidden');
+    });
+
+    // ---------- Save as Image ----------
     const saveImageBtn = document.getElementById('save-image-btn');
     saveImageBtn.addEventListener('click', () => {
-        const controls = document.querySelector('.controls-bar');
-        const savedControls = controls.style.display;
-        controls.style.display = 'none';
+        const controls = document.querySelector('.controls');
+        const hashFilter = document.querySelector('.hash-filter');
+        const outers = document.querySelectorAll('.football-field-outer');
+        const fields = document.querySelectorAll('.football-field');
 
+        const saved = {
+            controls: controls.style.display,
+            hash: hashFilter.style.display,
+            note: infoNote.style.display,
+            animation: heatmapContainer.style.animation,
+            padding: heatmapContainer.style.padding,
+            outers: Array.from(outers).map(o => o.style.padding)
+        };
+
+        controls.style.display = 'none';
+        hashFilter.style.display = 'none';
+        infoNote.style.display = 'none';
+        heatmapContainer.style.animation = 'none';
+        heatmapContainer.style.padding = '30px 15px 60px 15px';
+        outers.forEach(o => o.style.padding = '0 35px');
+        fields.forEach(f => f.classList.add('capture-mode'));
         fieldsRow.style.zoom = 1;
         const savedWidth = heatmapContainer.style.width;
-        const savedPadding = heatmapContainer.style.padding;
-        const savedBg = heatmapContainer.style.backgroundColor;
-
         heatmapContainer.style.width = 'max-content';
-        heatmapContainer.style.padding = '25px 35px 35px 35px';
-        heatmapContainer.style.backgroundColor = '#ffffff';
 
-        html2canvas(heatmapContainer, {
-            backgroundColor: '#ffffff',
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            onclone: (clonedDoc) => {
-                const clonedContainer = clonedDoc.getElementById('heatmap-container');
-                if (clonedContainer) {
-                    clonedContainer.style.animation = 'none';
-                    clonedContainer.style.opacity = '1';
-                    clonedContainer.style.transform = 'none';
-                    clonedContainer.style.filter = 'none';
-                    clonedContainer.style.backgroundColor = '#ffffff';
-                    clonedContainer.querySelectorAll('*').forEach(el => {
-                        el.style.animation = 'none';
-                        el.style.transition = 'none';
-                    });
-                }
-            }
-        }).then(canvas => {
-            controls.style.display = savedControls;
+        const restore = () => {
+            controls.style.display = saved.controls;
+            hashFilter.style.display = saved.hash;
+            infoNote.style.display = saved.note;
+            heatmapContainer.style.animation = saved.animation;
+            heatmapContainer.style.padding = saved.padding;
             heatmapContainer.style.width = savedWidth;
-            heatmapContainer.style.padding = savedPadding;
-            heatmapContainer.style.backgroundColor = savedBg;
+            outers.forEach((o, i) => o.style.padding = saved.outers[i]);
+            fields.forEach(f => f.classList.remove('capture-mode'));
             fitFields();
+        };
 
-            const link = document.createElement('a');
-            link.download = `PassZone_Analysis_${new Date().toISOString().slice(0, 10)}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-        }).catch(err => {
-            console.error(err);
-            controls.style.display = savedControls;
-            heatmapContainer.style.width = savedWidth;
-            heatmapContainer.style.padding = savedPadding;
-            heatmapContainer.style.backgroundColor = savedBg;
-            fitFields();
-            alert('画像の保存に失敗しました。');
-        });
+        html2canvas(heatmapContainer, { backgroundColor: '#ffffff', scale: 2 })
+            .then(canvas => {
+                restore();
+                const link = document.createElement('a');
+                link.download = `PassZone_${currentHashFilter}_${new Date().toISOString().slice(0, 10)}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            })
+            .catch(err => {
+                console.error('Error generating image', err);
+                alert('画像の保存に失敗しました。');
+                restore();
+            });
     });
 });
     </script>
